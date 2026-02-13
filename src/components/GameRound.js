@@ -46,16 +46,32 @@ export default function GameRound({ gameData, room, playerId, onEndRound }) {
         <div className="container fade-in">
             <div className="logo" style={{ fontSize: '1.5rem', marginBottom: 20 }}>BLÖF</div>
 
-            {/* Twist Banner */}
-            {twist && (
-                <div className="twist-banner">
-                    <span className="twist-emoji">{twist.emoji}</span>
-                    <div className="twist-info">
-                        <div className="twist-name">{twist.name}</div>
-                        <div className="twist-desc">{twist.description}</div>
+            {/* Twist Banner - sadece spoiler vermeyen twist'ler gösterilir */}
+            {twist && (() => {
+                // Bu twist'ler oynanışı etkiler, oyuncuların bilmesi gerekir
+                const visibleTwists = ['silent_round', 'time_pressure'];
+                if (visibleTwists.includes(twist.id)) {
+                    return (
+                        <div className="twist-banner">
+                            <span className="twist-emoji">{twist.emoji}</span>
+                            <div className="twist-info">
+                                <div className="twist-name">{twist.name}</div>
+                                <div className="twist-desc">{twist.description}</div>
+                            </div>
+                        </div>
+                    );
+                }
+                // Diğer twist'ler gizli - sadece eğlence modu aktif mesajı
+                return (
+                    <div className="twist-banner">
+                        <span className="twist-emoji">🎭</span>
+                        <div className="twist-info">
+                            <div className="twist-name">Eğlence Modu Aktif</div>
+                            <div className="twist-desc">Bu turda sürpriz bir twist var! 🤫</div>
+                        </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* Silent Round Warning */}
             {isSilentRound && (
