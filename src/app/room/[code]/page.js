@@ -25,6 +25,11 @@ export default function RoomPage() {
 
     const mountedRef = useRef(true);
 
+    const [needsJoin, setNeedsJoin] = useState(false);
+    const [joinName, setJoinName] = useState('');
+    const [joinLoading, setJoinLoading] = useState(false);
+    const [joinError, setJoinError] = useState('');
+
     // Session'dan playerId oku
     useEffect(() => {
         const storedPlayerId = sessionStorage.getItem('playerId');
@@ -33,14 +38,40 @@ export default function RoomPage() {
         if (storedPlayerId && storedRoomCode === roomCode) {
             setPlayerId(storedPlayerId);
         } else {
-            // Direkt URL ile geldiyse ana sayfaya yönlendir
-            router.push('/');
+            // Direkt URL ile geldiyse katılma formu göster
+            setNeedsJoin(true);
         }
 
         return () => {
             mountedRef.current = false;
         };
-    }, [roomCode, router]);
+    }, [roomCode]);
+
+    // Direkt URL ile odaya katıl
+    const handleDirectJoin = async () => {
+        const name = joinName.trim();
+        if (!name || name.length < 2) {
+            setJoinError('İsim en az 2 karakter olmalı.');
+            return;
+        }
+        setJoinLoading(true);
+        setJoinError('');
+        try {
+            const response = await emit('join-room', { code: roomCode, playerName: name });
+            if (response.success) {
+                sessionStorage.setItem('playerId', response.playerId);
+                sessionStorage.setItem('roomCode', response.roomCode);
+                setPlayerId(response.playerId);
+                setRoom(response.room);
+                setNeedsJoin(false);
+            } else {
+                setJoinError(response.error || 'Odaya katılamadı.');
+            }
+        } catch (err) {
+            setJoinError('Bağlantı hatası. Tekrar deneyin.');
+        }
+        setJoinLoading(false);
+    };
 
     // Odaya yeniden bağlan (sayfa geçişi/refresh sonrası)
     useEffect(() => {
@@ -204,6 +235,49 @@ export default function RoomPage() {
         sessionStorage.clear();
         router.push('/');
     }, [router]);
+
+    // Direkt URL ile geldiyse katılma formu göster
+    if (needsJoin) {
+        return (
+            <div className="container fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '100%', maxWidth: 360, textAlign: 'center' }}>
+                    <div className="logo" style={{ fontSize: '2rem', marginBottom: 8 }}>BLÖF</div>
+                    <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🚪</div>
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 4 }}>Masaya Katıl</h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 20 }}>
+                        Masa Kodu: <strong style={{ color: 'var(--accent-primary)' }}>{roomCode}</strong>
+                    </p>
+
+                    <input
+                        type="text"
+                        className="input-field"
+                        placeholder="Adını gir"
+                        value={joinName}
+                        onChange={(e) => setJoinName(e.target.value)}
+                        maxLength={15}
+                        onKeyDown={(e) => e.key === 'Enter' && handleDirectJoin()}
+                        style={{ marginBottom: 12 }}
+                    />
+
+                    {joinError && (
+                        <div style={{ color: '#ff6b6b', fontSize: '0.8rem', marginBottom: 12 }}>{joinError}</div>
+                    )}
+
+                    <button
+                        className="btn btn-primary"
+                        onClick={handleDirectJoin}
+                        disabled={joinLoading || !joinName.trim()}
+                    >
+                        {joinLoading ? (
+                            <><div className="loading-spinner" style={{ width: 18, height: 18 }} /> Katılınıyor...</>
+                        ) : (
+                            <><span>🎮</span> Katıl</>
+                        )}
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     // Loading state
     if (!playerId || !room) {

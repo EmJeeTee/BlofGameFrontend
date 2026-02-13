@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const AVATAR_COLORS = [
     '#6c5ce7', '#00b894', '#fd79a8', '#fdcb6e', '#00cec9',
@@ -10,6 +10,12 @@ const AVATAR_COLORS = [
 export default function VotingScreen({ room, playerId, onVote, voteProgress, isRevote }) {
     const [selectedId, setSelectedId] = useState(null);
     const [hasVoted, setHasVoted] = useState(false);
+
+    // Revote geldiğinde state'i sıfırla
+    useEffect(() => {
+        setHasVoted(false);
+        setSelectedId(null);
+    }, [isRevote]);
 
     const eligibleTargets = isRevote
         ? room.players.filter(p => room.revoteEligible?.includes(p.id))
