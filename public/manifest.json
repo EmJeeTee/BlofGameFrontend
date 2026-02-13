@@ -1,0 +1,10 @@
+{
+    "name": "Blöf Oyunu",
+    "short_name": "Blöf",
+    "description": "Çok oyunculu kelime blöf oyunu",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0a0a1a",
+    "theme_color": "#0a0a1a",
+    "icons": []
+}
