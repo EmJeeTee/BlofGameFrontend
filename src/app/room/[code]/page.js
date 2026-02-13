@@ -42,6 +42,30 @@ export default function RoomPage() {
         };
     }, [roomCode, router]);
 
+    // Odaya yeniden bağlan (sayfa geçişi/refresh sonrası)
+    useEffect(() => {
+        if (!playerId || !isConnected) return;
+
+        const rejoin = async () => {
+            try {
+                const response = await emit('rejoin-room', { roomCode, playerId });
+                if (response.success && mountedRef.current) {
+                    setRoom(response.room);
+                    if (response.room.state && response.room.state !== 'lobby') {
+                        setGameState(response.room.state);
+                    }
+                } else if (!response.success) {
+                    console.error('Rejoin hatası:', response.error);
+                    router.push('/');
+                }
+            } catch (err) {
+                console.error('Rejoin hatası:', err);
+            }
+        };
+
+        rejoin();
+    }, [playerId, isConnected, roomCode, emit, router]);
+
     // Socket event listeners
     useEffect(() => {
         if (!playerId) return;
