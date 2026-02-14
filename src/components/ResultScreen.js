@@ -188,7 +188,8 @@ export default function ResultScreen({ result, room, playerId, onPlayAgain, onGo
                         <span>🔄</span> Tekrar Oyna
                     </button>
                 )}
-                <button className="btn btn-secondary" onClick={onGoHome}>
+                {/* Gizlendi - gerekirse display:none kaldırılarak aktif edilebilir */}
+                <button className="btn btn-secondary" onClick={onGoHome} style={{ display: 'none' }}>
                     <span>🏠</span> Ana Sayfaya Dön
                 </button>
                 {!isHost && (
