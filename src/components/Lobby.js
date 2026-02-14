@@ -5,6 +5,7 @@ import PlayerCard from './PlayerCard';
 
 export default function Lobby({ room, playerId, onStartGame }) {
     const [mode, setMode] = useState('standard');
+    const [wordType, setWordType] = useState('similar');
     const [copied, setCopied] = useState(false);
     const isHost = room.hostId === playerId;
 
@@ -100,6 +101,24 @@ export default function Lobby({ room, playerId, onStartGame }) {
                             Eğlence
                         </button>
                     </div>
+
+                    <div className="section-title" style={{ marginTop: 16 }}>Kelime Türü</div>
+                    <div className="mode-toggle">
+                        <button
+                            className={`mode-btn ${wordType === 'similar' ? 'active' : ''}`}
+                            onClick={() => setWordType('similar')}
+                        >
+                            <span className="mode-emoji">🔤</span>
+                            Benzer Kelime
+                        </button>
+                        <button
+                            className={`mode-btn ${wordType === 'random' ? 'active' : ''}`}
+                            onClick={() => setWordType('random')}
+                        >
+                            <span className="mode-emoji">🎭</span>
+                            Blöf Kelime
+                        </button>
+                    </div>
                 </>
             )}
 
@@ -108,7 +127,7 @@ export default function Lobby({ room, playerId, onStartGame }) {
             {isHost ? (
                 <button
                     className="btn btn-primary"
-                    onClick={() => onStartGame(mode)}
+                    onClick={() => onStartGame(mode, wordType)}
                     disabled={room.players.length < 2}
                     style={{ marginTop: 16 }}
                 >

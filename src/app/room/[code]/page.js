@@ -196,8 +196,8 @@ export default function RoomPage() {
     };
 
     // Oyunu başlat
-    const handleStartGame = useCallback(async (mode) => {
-        const response = await emit('start-game', { roomCode, mode });
+    const handleStartGame = useCallback(async (mode, wordType) => {
+        const response = await emit('start-game', { roomCode, mode, wordType });
         if (!response.success) {
             showNotification(response.error);
         }
