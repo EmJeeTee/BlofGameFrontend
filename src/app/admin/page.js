@@ -2,7 +2,10 @@
 
 import { useState, useCallback } from 'react';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+let SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+if (SOCKET_URL && !SOCKET_URL.startsWith('http')) {
+    SOCKET_URL = `https://${SOCKET_URL}`;
+}
 
 export default function AdminPage() {
     const [adminKey, setAdminKey] = useState('');
