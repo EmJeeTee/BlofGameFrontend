@@ -1,91 +1,23 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function GameRound({ gameData, room, playerId, onEndRound }) {
     const isHost = room.hostId === playerId;
-    const { word, isBluff, round, totalRounds, twist, timerDuration, silentRound } = gameData;
+    const { word, isBluff, round, totalRounds } = gameData;
 
-    const [timeLeft, setTimeLeft] = useState(timerDuration || null);
     const [wordRevealed, setWordRevealed] = useState(false);
-    const timerRef = useRef(null);
 
-    // Kelimeyi 2 saniye sonra göster (dramatik efekt)
+    // Kelimeyi kısa süre sonra göster (dramatik efekt)
     useEffect(() => {
+        setWordRevealed(false);
         const timeout = setTimeout(() => setWordRevealed(true), 800);
         return () => clearTimeout(timeout);
     }, [round]);
 
-    // Timer (Zaman Baskısı twist'i)
-    useEffect(() => {
-        if (!timerDuration) return;
-
-        setTimeLeft(timerDuration);
-        timerRef.current = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev <= 1) {
-                    clearInterval(timerRef.current);
-                    // Otomatik tur sonlandır (host tarafında)
-                    if (isHost) {
-                        onEndRound();
-                    }
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-
-        return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-        };
-    }, [round, timerDuration, isHost, onEndRound]);
-
-    const isSilentRound = silentRound && silentRound === round;
-
     return (
         <div className="container fade-in">
             <div className="logo" style={{ fontSize: '1.5rem', marginBottom: 20 }}>BLÖF</div>
-
-            {/* Twist Banner - sadece spoiler vermeyen twist'ler gösterilir */}
-            {twist && (() => {
-                // Bu twist'ler oynanışı etkiler, oyuncuların bilmesi gerekir
-                const visibleTwists = ['silent_round', 'time_pressure'];
-                if (visibleTwists.includes(twist.id)) {
-                    return (
-                        <div className="twist-banner">
-                            <span className="twist-emoji">{twist.emoji}</span>
-                            <div className="twist-info">
-                                <div className="twist-name">{twist.name}</div>
-                                <div className="twist-desc">{twist.description}</div>
-                            </div>
-                        </div>
-                    );
-                }
-                // Diğer twist'ler gizli - sadece eğlence modu aktif mesajı
-                return (
-                    <div className="twist-banner">
-                        <span className="twist-emoji">🎭</span>
-                        <div className="twist-info">
-                            <div className="twist-name">Eğlence Modu Aktif</div>
-                            <div className="twist-desc">Bu turda sürpriz bir twist var! 🤫</div>
-                        </div>
-                    </div>
-                );
-            })()}
-
-            {/* Silent Round Warning */}
-            {isSilentRound && (
-                <div className="silent-banner">
-                    🤫 Sessiz Tur! Konuşma yasak!
-                </div>
-            )}
-
-            {/* Timer */}
-            {timerDuration && timeLeft !== null && (
-                <div className={`timer ${timeLeft <= 10 ? 'urgent' : ''}`}>
-                    ⏱️ {timeLeft}s
-                </div>
-            )}
 
             {/* Round Indicator */}
             <div className="round-info">

@@ -126,9 +126,6 @@ export default function RoomPage() {
                     isBluff: data.isBluff,
                     round: data.round,
                     totalRounds: data.totalRounds,
-                    twist: data.twist,
-                    timerDuration: data.timerDuration,
-                    silentRound: data.silentRound,
                     mode: data.mode
                 });
             }
