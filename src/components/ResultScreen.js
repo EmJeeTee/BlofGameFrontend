@@ -139,6 +139,55 @@ export default function ResultScreen({ result, room, playerId, onPlayAgain, onGo
                     </div>
                 )}
 
+                {/* Kelime Dağılımı - Her oyuncunun gördüğü kelime */}
+                {result.wordAssignments && !result.playerWords && (
+                    <div style={{ marginTop: 16, marginBottom: 24 }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12 }}>
+                            Kelime Dağılımı:
+                        </div>
+                        {result.bluffWord && (
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                gap: 16,
+                                marginBottom: 12,
+                                fontSize: '0.85rem'
+                            }}>
+                                <span>Gerçek: <strong style={{ color: 'var(--accent-primary)' }}>{result.word}</strong></span>
+                                <span>Blöf: <strong style={{ color: 'var(--accent-red)' }}>{result.bluffWord}</strong></span>
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {Object.entries(result.wordAssignments).map(([id, word]) => {
+                                const isBluffer = result.bluffPlayerIds?.includes(id);
+                                return (
+                                    <div key={id} style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        padding: '8px 14px',
+                                        background: isBluffer ? 'rgba(255, 107, 107, 0.06)' : 'var(--bg-card)',
+                                        border: isBluffer ? '1px solid rgba(255, 107, 107, 0.15)' : '1px solid var(--border-subtle)',
+                                        borderRadius: 'var(--radius-sm)',
+                                        fontSize: '0.85rem'
+                                    }}>
+                                        <span style={{ fontWeight: 500 }}>
+                                            {isBluffer && '🎭 '}{getPlayerName(id)}
+                                            {id === playerId && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}> (Sen)</span>}
+                                        </span>
+                                        <span style={{
+                                            fontWeight: 600,
+                                            color: isBluffer ? 'var(--accent-red)' : 'var(--accent-primary)'
+                                        }}>
+                                            {word}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 {/* Vote Counts */}
                 {result.voteCounts && Object.keys(result.voteCounts).length > 0 && (
                     <div style={{ marginTop: 16, marginBottom: 32 }}>

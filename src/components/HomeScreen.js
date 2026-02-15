@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function HomeScreen({ onCreateRoom, onJoinRoom }) {
     const [view, setView] = useState('main'); // main | create | join
@@ -8,6 +8,16 @@ export default function HomeScreen({ onCreateRoom, onJoinRoom }) {
     const [roomCode, setRoomCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [activeSession, setActiveSession] = useState(null);
+
+    // Aktif oturum kontrolü
+    useEffect(() => {
+        const storedRoomCode = localStorage.getItem('blof_roomCode');
+        const storedPlayerName = localStorage.getItem('blof_playerName');
+        if (storedRoomCode && storedPlayerName) {
+            setActiveSession({ roomCode: storedRoomCode, playerName: storedPlayerName });
+        }
+    }, []);
 
     const handleCreate = async () => {
         if (!name.trim()) {
@@ -62,9 +72,19 @@ export default function HomeScreen({ onCreateRoom, onJoinRoom }) {
                         <span>🎲</span> Masa Kur
                     </button>
 
-                    <button className="btn btn-secondary" onClick={() => setView('join')}>
+                    <button className="btn btn-secondary" onClick={() => setView('join')} style={{ marginBottom: 12 }}>
                         <span>🚪</span> Masaya Katıl
                     </button>
+
+                    {activeSession && (
+                        <button
+                            className="btn btn-success"
+                            onClick={() => window.location.href = `/room/${activeSession.roomCode}`}
+                            style={{ marginBottom: 0 }}
+                        >
+                            <span>🔄</span> Devam Et ({activeSession.roomCode})
+                        </button>
+                    )}
                 </div>
 
                 <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: '0.75rem' }}>

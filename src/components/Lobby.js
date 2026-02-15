@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PlayerCard from './PlayerCard';
 
 export default function Lobby({ room, playerId, onStartGame }) {
@@ -8,6 +8,11 @@ export default function Lobby({ room, playerId, onStartGame }) {
     const [wordType, setWordType] = useState('similar');
     const [copied, setCopied] = useState(false);
     const isHost = room.hostId === playerId;
+
+    // Mobil scroll fix - lobiye geldiğinde sayfayı üste kaydır
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     const handleCopy = async () => {
         try {

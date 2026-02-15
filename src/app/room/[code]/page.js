@@ -22,6 +22,7 @@ export default function RoomPage() {
     const [voteProgress, setVoteProgress] = useState(null);
     const [isRevote, setIsRevote] = useState(false);
     const [notification, setNotification] = useState(null);
+    const [skipVote, setSkipVote] = useState(null);
 
     const mountedRef = useRef(true);
 
@@ -30,10 +31,10 @@ export default function RoomPage() {
     const [joinLoading, setJoinLoading] = useState(false);
     const [joinError, setJoinError] = useState('');
 
-    // Session'dan playerId oku
+    // localStorage'dan playerId oku (sessionStorage yerine - tab kapatılsa bile hayatta kalır)
     useEffect(() => {
-        const storedPlayerId = sessionStorage.getItem('playerId');
-        const storedRoomCode = sessionStorage.getItem('roomCode');
+        const storedPlayerId = localStorage.getItem('blof_playerId');
+        const storedRoomCode = localStorage.getItem('blof_roomCode');
 
         if (storedPlayerId && storedRoomCode === roomCode) {
             setPlayerId(storedPlayerId);
@@ -59,11 +60,18 @@ export default function RoomPage() {
         try {
             const response = await emit('join-room', { code: roomCode, playerName: name });
             if (response.success) {
-                sessionStorage.setItem('playerId', response.playerId);
-                sessionStorage.setItem('roomCode', response.roomCode);
+                localStorage.setItem('blof_playerId', response.playerId);
+                localStorage.setItem('blof_roomCode', response.roomCode);
+                localStorage.setItem('blof_playerName', name);
                 setPlayerId(response.playerId);
                 setRoom(response.room);
                 setNeedsJoin(false);
+
+                // Oyun devam ediyorsa game state'i uygula
+                if (response.gameState) {
+                    setGameState('playing');
+                    setGameData(response.gameState);
+                }
             } else {
                 setJoinError(response.error || 'Odaya katılamadı.');
             }
@@ -82,11 +90,20 @@ export default function RoomPage() {
                 const response = await emit('rejoin-room', { roomCode, playerId });
                 if (response.success && mountedRef.current) {
                     setRoom(response.room);
-                    if (response.room.state && response.room.state !== 'lobby') {
+
+                    // Oyun devam ediyorsa game state'i uygula
+                    if (response.gameState) {
+                        setGameState('playing');
+                        setGameData(response.gameState);
+                    } else if (response.room.state && response.room.state !== 'lobby') {
                         setGameState(response.room.state);
                     }
                 } else if (!response.success) {
                     console.error('Rejoin hatası:', response.error);
+                    // localStorage'ı temizle ve ana sayfaya yönlendir
+                    localStorage.removeItem('blof_playerId');
+                    localStorage.removeItem('blof_roomCode');
+                    localStorage.removeItem('blof_playerName');
                     router.push('/');
                 }
             } catch (err) {
@@ -113,6 +130,7 @@ export default function RoomPage() {
                     setGameResult(null);
                     setVoteProgress(null);
                     setIsRevote(false);
+                    setSkipVote(null);
                 }
             }
         }));
@@ -128,6 +146,7 @@ export default function RoomPage() {
                     totalRounds: data.totalRounds,
                     mode: data.mode
                 });
+                setSkipVote(null);
             }
         }));
 
@@ -183,6 +202,70 @@ export default function RoomPage() {
             }
         }));
 
+        // Oyuncu tekrar bağlandı
+        cleanups.push(on('player-reconnected', ({ playerName }) => {
+            if (mountedRef.current) {
+                showNotification(`${playerName} tekrar bağlandı! ✅`);
+            }
+        }));
+
+        // Kelime değiştirme oylaması başladı
+        cleanups.push(on('skip-word-vote-started', ({ requestedBy, votedCount, totalPlayers }) => {
+            if (mountedRef.current) {
+                const isRequester = requestedBy === playerId;
+                setSkipVote({
+                    active: true,
+                    voted: isRequester, // Host otomatik oy verir
+                    votedCount,
+                    totalPlayers
+                });
+                if (!isRequester) {
+                    showNotification('Kelime değiştirme oylaması başladı!');
+                }
+            }
+        }));
+
+        // Kelime değiştirme oy güncellendi
+        cleanups.push(on('skip-word-vote-update', ({ votedCount, totalPlayers }) => {
+            if (mountedRef.current) {
+                setSkipVote(prev => prev ? { ...prev, votedCount, totalPlayers } : null);
+            }
+        }));
+
+        // Kelime değiştirildi
+        cleanups.push(on('word-changed', ({ word, isBluff, approved }) => {
+            if (mountedRef.current) {
+                setGameData(prev => ({
+                    ...prev,
+                    word,
+                    isBluff
+                }));
+                setSkipVote(null);
+                if (approved) {
+                    showNotification('Kelime değiştirildi! 🔄');
+                }
+            }
+        }));
+
+        // Kelime değiştirme reddedildi
+        cleanups.push(on('skip-word-rejected', ({ yesCount, noCount }) => {
+            if (mountedRef.current) {
+                setSkipVote(null);
+                showNotification(`Kelime değiştirme reddedildi (${yesCount} evet, ${noCount} hayır)`);
+            }
+        }));
+
+        // Oda kapandı
+        cleanups.push(on('room-closed', ({ reason }) => {
+            if (mountedRef.current) {
+                showNotification(reason || 'Oda kapatıldı.');
+                localStorage.removeItem('blof_playerId');
+                localStorage.removeItem('blof_roomCode');
+                localStorage.removeItem('blof_playerName');
+                setTimeout(() => router.push('/'), 2000);
+            }
+        }));
+
         return () => {
             cleanups.forEach(cleanup => cleanup && cleanup());
         };
@@ -229,9 +312,28 @@ export default function RoomPage() {
 
     // Ana sayfaya dön
     const handleGoHome = useCallback(() => {
-        sessionStorage.clear();
+        localStorage.removeItem('blof_playerId');
+        localStorage.removeItem('blof_roomCode');
+        localStorage.removeItem('blof_playerName');
         router.push('/');
     }, [router]);
+
+    // Kelime değiştirme isteği (host)
+    const handleSkipWord = useCallback(async () => {
+        const response = await emit('skip-word-request', { roomCode });
+        if (!response.success) {
+            showNotification(response.error);
+        }
+    }, [emit, roomCode]);
+
+    // Kelime değiştirme oyu
+    const handleSkipVote = useCallback(async (vote) => {
+        setSkipVote(prev => prev ? { ...prev, voted: true } : null);
+        const response = await emit('skip-word-vote', { roomCode, vote });
+        if (!response.success) {
+            showNotification(response.error);
+        }
+    }, [emit, roomCode]);
 
     // Direkt URL ile geldiyse katılma formu göster
     if (needsJoin) {
@@ -347,6 +449,9 @@ export default function RoomPage() {
                     room={room}
                     playerId={playerId}
                     onEndRound={handleEndRound}
+                    onSkipWord={handleSkipWord}
+                    skipVote={skipVote}
+                    onSkipVote={handleSkipVote}
                 />
             )}
 
