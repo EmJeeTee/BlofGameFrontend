@@ -10,12 +10,17 @@ export default function Home() {
     const router = useRouter();
 
     const handleCreateRoom = useCallback(async (name) => {
+        // Eski oturum bilgilerini temizle - yeni masa kuruyoruz
+        localStorage.removeItem('blof_playerId');
+        localStorage.removeItem('blof_roomCode');
+        localStorage.removeItem('blof_playerName');
+
         const response = await emit('create-room', { hostName: name });
         if (response.success) {
-            // Session'a bilgileri kaydet
-            sessionStorage.setItem('playerId', response.playerId);
-            sessionStorage.setItem('playerName', name);
-            sessionStorage.setItem('roomCode', response.roomCode);
+            // localStorage kullan (sessionStorage yerine - tab kapatılınca da hayatta kalır)
+            localStorage.setItem('blof_playerId', response.playerId);
+            localStorage.setItem('blof_playerName', name);
+            localStorage.setItem('blof_roomCode', response.roomCode);
             router.push(`/room/${response.roomCode}`);
         } else {
             throw new Error(response.error);
@@ -25,9 +30,9 @@ export default function Home() {
     const handleJoinRoom = useCallback(async (name, code) => {
         const response = await emit('join-room', { code, playerName: name });
         if (response.success) {
-            sessionStorage.setItem('playerId', response.playerId);
-            sessionStorage.setItem('playerName', name);
-            sessionStorage.setItem('roomCode', response.roomCode);
+            localStorage.setItem('blof_playerId', response.playerId);
+            localStorage.setItem('blof_playerName', name);
+            localStorage.setItem('blof_roomCode', response.roomCode);
             router.push(`/room/${response.roomCode}`);
         } else {
             throw new Error(response.error);
